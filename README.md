@@ -75,6 +75,12 @@ A modern web application built with SvelteKit and Firebase that allows users to 
 - TypeScript - Type safety and better developer experience
 - date-fns - Date formatting and manipulation
 
+## Technology Choices
+
+- **SvelteKit**: Chosen for its superior performance through compile-time reactivity, zero-runtime virtual DOM, and built-in routing. Offers better bundle sizes than React/Vue.
+- **Firebase**: Provides rapid authentication setup with Google OAuth, robust security rules, and seamless integration. Simpler than custom auth servers.
+- **Tailwind CSS**: Enables faster development with utility-first approach, better performance than component libraries, and smaller bundle sizes than traditional CSS frameworks.
+
 ## Project Structure
 
 ```
