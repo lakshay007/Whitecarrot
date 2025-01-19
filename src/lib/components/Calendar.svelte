@@ -1,3 +1,12 @@
+<!-- 
+ * Calendar component that displays and manages Google Calendar events.
+ * Features include:
+ * - Event filtering by date range and type
+ * - Search functionality across event details
+ * - Export capabilities (CSV/PDF)
+ * - Detailed event view in modal
+ * - Responsive design -->
+
 <script lang="ts">
     import { onMount } from 'svelte';
     import { getCalendarEvents } from '$lib/calendar';
@@ -5,18 +14,23 @@
     import { format } from 'date-fns';
     import { fade, fly } from 'svelte/transition';
 
+    // State management for events and UI
     let events: calendar_v3.Schema$Event[] = [];
     let filteredEvents: calendar_v3.Schema$Event[] = [];
     let loading = false;
     let error: string | null = null;
+
+    // Date range state with default values
     let startDate: string = format(new Date(), 'yyyy-MM-dd');
     let endDate: string = format(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), 'yyyy-MM-dd');
+
+    // Filter and modal state
     let searchQuery = '';
     let selectedType = 'all';
     let selectedEvent: calendar_v3.Schema$Event | null = null;
     let showModal = false;
 
-    // Event types for filtering
+    // Available event types for filtering
     const eventTypes = [
         { value: 'all', label: 'All Events' },
         { value: 'default', label: 'Default' },
@@ -25,12 +39,24 @@
         { value: 'workingLocation', label: 'Working Location' }
     ];
 
+    /**
+     * Sets the date range to today's date
+     * Triggers automatic event reload through reactive statement
+     */
     function setToday() {
         const today = new Date();
         startDate = format(today, 'yyyy-MM-dd');
         endDate = format(today, 'yyyy-MM-dd');
     }
 
+    /**
+     * Filters events based on search query and selected type
+     * Applies filters to:
+     * - Event summary (title)
+     * - Event description
+     * - Event location
+     * - Event type
+     */
     function filterEvents() {
         filteredEvents = events.filter(event => {
             const matchesSearch = searchQuery.trim() === '' || 
@@ -46,6 +72,10 @@
         });
     }
 
+    /**
+     * Exports filtered events to CSV format
+     * Includes all relevant event details and handles proper CSV formatting
+     */
     function exportToCSV() {
         const headers = ['Title', 'Start', 'End', 'Location', 'Type', 'Description'];
         const csvData = filteredEvents.map(event => [
@@ -64,6 +94,7 @@
             ...csvData.map(row => row.map(cell => `"${cell.replace(/"/g, '""')}"`).join(','))
         ].join('\n');
 
+        // Create and trigger download
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
         const link = document.createElement('a');
         const url = URL.createObjectURL(blob);
@@ -75,10 +106,15 @@
         document.body.removeChild(link);
     }
 
+    /**
+     * Exports filtered events to PDF format
+     * Creates a printable view with formatted table of events
+     */
     function exportToPDF() {
         const printWindow = window.open('', '_blank');
         if (!printWindow) return;
 
+        // Generate HTML content for PDF
         const html = `
             <html>
                 <head>
@@ -126,28 +162,41 @@
         printWindow.print();
     }
 
+    /**
+     * Opens the event details modal
+     * @param event The calendar event to display
+     */
     function openEventDetails(event: calendar_v3.Schema$Event) {
         selectedEvent = event;
         showModal = true;
     }
 
+    /**
+     * Closes the event details modal and cleans up state
+     */
     function closeModal() {
         showModal = false;
         selectedEvent = null;
     }
 
+    // Reactive statement for filtering events when search or type changes
     $: {
         if (searchQuery !== undefined || selectedType) {
             filterEvents();
         }
     }
 
+    // Reactive statement for loading events when date range changes
     $: {
         if (startDate || endDate) {
             loadEvents();
         }
     }
 
+    /**
+     * Loads calendar events for the selected date range
+     * Handles loading state and error handling
+     */
     async function loadEvents() {
         loading = true;
         error = null;
@@ -164,6 +213,7 @@
         }
     }
 
+    // Initial load of events when component mounts
     onMount(loadEvents);
 </script>
 

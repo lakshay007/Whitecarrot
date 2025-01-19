@@ -1,3 +1,8 @@
+<!-- 
+ * Main page component for the CarrotEvents application.
+ * Handles authentication flow and renders either the login screen or calendar view.
+ * Uses Firebase for authentication and manages access tokens for Google Calendar API. -->
+ 
 <script lang="ts">
     import { auth, googleProvider } from '$lib/firebase';
     import { signInWithPopup, signOut, GoogleAuthProvider } from 'firebase/auth';
@@ -5,8 +10,14 @@
     import Calendar from '$lib/components/Calendar.svelte';
     import { fade, fly } from 'svelte/transition';
 
+    // Prevents multiple login attempts while initial login is in progress
     let initialLoginInProgress = false;
 
+    /**
+     * Handles the Google Sign-In process.
+     * Manages the OAuth flow and stores the access token for Calendar API access.
+     * Shows appropriate error messages for common authentication issues.
+     */
     async function handleLogin() {
         if (initialLoginInProgress) return;
         initialLoginInProgress = true;
@@ -19,6 +30,7 @@
                 throw new Error('Failed to get access token');
             }
 
+            // Store token in both store and localStorage for persistence
             accessToken.set(credential.accessToken);
             localStorage.setItem('calendar_access_token', credential.accessToken);
             console.log('Sign-in successful with OAuth token');
@@ -34,6 +46,10 @@
         }
     }
 
+    /**
+     * Handles user logout.
+     * Cleans up authentication state and removes stored tokens.
+     */
     async function handleLogout() {
         try {
             await signOut(auth);
@@ -45,11 +61,17 @@
     }
 </script>
 
+<!-- Main container with background and responsive padding -->
 <div class="min-h-screen bg-gray-900 text-gray-100 p-2 sm:p-4 transition-all duration-300 relative overflow-hidden">
+    <!-- Decorative background with carrot pattern -->
     <div class="carrot-bg"></div>
+    
+    <!-- Main content container with z-index to appear above background -->
     <div class="max-w-7xl mx-auto relative z-10">
+        <!-- Header section with app title and auth controls -->
         <header class="bg-gray-800 shadow-lg rounded-lg p-4 mb-6">
             <div class="flex flex-col sm:flex-row justify-between items-center gap-4">
+                <!-- App logo and title -->
                 <h1 class="text-2xl font-bold text-orange-400 flex items-center whitespace-nowrap">
                     <svg class="w-8 h-8 mr-2" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <path d="M12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2Z" fill="#FFA500"/>
@@ -57,7 +79,10 @@
                     </svg>
                     CarrotEvents
                 </h1>
+
+                <!-- Conditional rendering of auth buttons -->
                 {#if $user}
+                    <!-- User info and logout button for authenticated users -->
                     <div class="flex items-center gap-4 flex-wrap justify-center">
                         <span class="text-gray-300 text-sm sm:text-base break-all text-center sm:text-left">{$user.email}</span>
                         <button
@@ -68,6 +93,7 @@
                         </button>
                     </div>
                 {:else}
+                    <!-- Login button for unauthenticated users -->
                     <button
                         on:click={handleLogin}
                         class="bg-orange-600 text-white px-4 py-2 rounded-md hover:bg-orange-700 transition-colors duration-200 flex items-center gap-2 w-full sm:w-auto justify-center"
@@ -85,11 +111,14 @@
             </div>
         </header>
 
+        <!-- Main content area with conditional rendering based on auth state -->
         {#if $user && $accessToken}
+            <!-- Calendar view for authenticated users -->
             <main in:fade="{{ duration: 300 }}" class="bg-gray-800 shadow-lg rounded-lg p-3 sm:p-6">
                 <Calendar />
             </main>
         {:else}
+            <!-- Welcome screen for unauthenticated users -->
             <div in:fly="{{ y: 50, duration: 300 }}" class="bg-gray-800 shadow-lg rounded-lg p-4 sm:p-8">
                 <div class="text-center mb-12">
                     <h2 class="text-xl sm:text-2xl font-semibold text-orange-400 mb-4">Welcome to CarrotEvents</h2>
@@ -109,7 +138,9 @@
                     </button>
                 </div>
 
+                <!-- Feature showcase grid -->
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mt-12">
+                    <!-- Feature cards with descriptions and visual examples -->
                     <!-- Feature 1: Event Display -->
                     <div class="bg-gray-900 p-6 rounded-lg shadow-md">
                         <div class="text-orange-400 mb-4">
@@ -184,21 +215,25 @@
 </div>
 
 <style>
+    /* Global styles for consistent dark theme */
     :global(body) {
         background-color: #1a202c;
         color: #e2e8f0;
     }
 
+    /* Common button styles */
     button {
         font-weight: 600;
         letter-spacing: 0.025em;
         box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
     }
 
+    /* Enhanced shadow for card elements */
     .shadow-lg {
         box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
     }
 
+    /* Decorative background pattern */
     .carrot-bg {
         position: fixed;
         top: 0;
