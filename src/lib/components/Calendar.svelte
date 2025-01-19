@@ -3,6 +3,7 @@
     import { getCalendarEvents } from '$lib/calendar';
     import type { calendar_v3 } from '@googleapis/calendar/build/v3';
     import { format } from 'date-fns';
+    import { fade, fly } from 'svelte/transition';
 
     let events: calendar_v3.Schema$Event[] = [];
     let filteredEvents: calendar_v3.Schema$Event[] = [];
@@ -12,6 +13,8 @@
     let endDate: string = format(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), 'yyyy-MM-dd');
     let searchQuery = '';
     let selectedType = 'all';
+    let selectedEvent: calendar_v3.Schema$Event | null = null;
+    let showModal = false;
 
     // Event types for filtering
     const eventTypes = [
@@ -121,6 +124,16 @@
         printWindow.document.write(html);
         printWindow.document.close();
         printWindow.print();
+    }
+
+    function openEventDetails(event: calendar_v3.Schema$Event) {
+        selectedEvent = event;
+        showModal = true;
+    }
+
+    function closeModal() {
+        showModal = false;
+        selectedEvent = null;
     }
 
     $: {
@@ -279,7 +292,10 @@
                 </thead>
                 <tbody class="bg-gray-900 divide-y divide-gray-800">
                     {#each filteredEvents as event}
-                        <tr class="hover:bg-gray-800 transition-colors duration-150">
+                        <tr 
+                            class="hover:bg-gray-800 transition-colors duration-150 cursor-pointer" 
+                            on:click={() => openEventDetails(event)}
+                        >
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <div class="text-sm font-medium text-gray-100">
                                     {event.summary || 'Untitled Event'}
@@ -334,6 +350,106 @@
             </table>
         </div>
     {/if}
+
+    {#if showModal && selectedEvent}
+        <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50" on:click={closeModal} transition:fade>
+            <div 
+                class="bg-gray-800 rounded-lg shadow-xl max-w-2xl w-full mx-auto overflow-hidden max-h-[90vh] flex flex-col" 
+                on:click|stopPropagation
+                transition:fly="{{ y: 50, duration: 300 }}"
+            >
+                <div class="p-6 flex flex-col flex-1 overflow-hidden">
+                    <div class="flex justify-between items-start mb-4 flex-shrink-0">
+                        <h3 class="text-xl font-semibold text-orange-400 pr-8">
+                            {selectedEvent.summary || 'Untitled Event'}
+                        </h3>
+                        <button 
+                            on:click={closeModal}
+                            class="text-gray-400 hover:text-gray-300 transition-colors"
+                        >
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+                    </div>
+
+                    <div class="space-y-4 overflow-y-auto pr-2 custom-scrollbar">
+                        <!-- Date and Time -->
+                        <div class="flex items-start gap-3 flex-shrink-0">
+                            <svg class="w-5 h-5 text-gray-400 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                            <div class="text-gray-300">
+                                <div>
+                                    {selectedEvent.start?.dateTime 
+                                        ? format(new Date(selectedEvent.start.dateTime), 'PPP')
+                                        : selectedEvent.start?.date
+                                        ? format(new Date(selectedEvent.start.date), 'PPP')
+                                        : 'No date'}
+                                </div>
+                                {#if selectedEvent.start?.dateTime}
+                                    <div class="text-sm text-gray-400">
+                                        {format(new Date(selectedEvent.start.dateTime), 'p')} - 
+                                        {selectedEvent.end?.dateTime 
+                                            ? format(new Date(selectedEvent.end.dateTime), 'p')
+                                            : 'No end time'}
+                                    </div>
+                                {/if}
+                            </div>
+                        </div>
+
+                        <!-- Location -->
+                        {#if selectedEvent.location}
+                            <div class="flex items-start gap-3 flex-shrink-0">
+                                <svg class="w-5 h-5 text-gray-400 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                                </svg>
+                                <div class="text-gray-300">{selectedEvent.location}</div>
+                            </div>
+                        {/if}
+
+                        <!-- Event Type -->
+                        <div class="flex items-start gap-3 flex-shrink-0">
+                            <svg class="w-5 h-5 text-gray-400 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                            </svg>
+                            <div class="text-gray-300">{selectedEvent.eventType || 'Default'}</div>
+                        </div>
+
+                        <!-- Description -->
+                        {#if selectedEvent.description}
+                            <div class="flex items-start gap-3">
+                                <svg class="w-5 h-5 text-gray-400 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7" />
+                                </svg>
+                                <div class="text-gray-300 whitespace-pre-wrap overflow-y-auto max-h-[40vh] custom-scrollbar">
+                                    {selectedEvent.description}
+                                </div>
+                            </div>
+                        {/if}
+
+                        <!-- Meeting Link -->
+                        {#if selectedEvent.hangoutLink}
+                            <div class="flex items-start gap-3 flex-shrink-0">
+                                <svg class="w-5 h-5 text-gray-400 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                                </svg>
+                                <a 
+                                    href={selectedEvent.hangoutLink} 
+                                    target="_blank" 
+                                    rel="noopener noreferrer"
+                                    class="text-orange-400 hover:text-orange-300 transition-colors"
+                                >
+                                    Join Meeting
+                                </a>
+                            </div>
+                        {/if}
+                    </div>
+                </div>
+            </div>
+        </div>
+    {/if}
 </div>
 
 <style>
@@ -350,6 +466,28 @@
         -webkit-print-color-adjust: exact;
         print-color-adjust: exact;
         appearance: none;
+    }
+
+    .custom-scrollbar {
+        scrollbar-width: thin;
+        scrollbar-color: #4B5563 transparent;
+    }
+
+    .custom-scrollbar::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    .custom-scrollbar::-webkit-scrollbar-track {
+        background: transparent;
+    }
+
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+        background-color: #4B5563;
+        border-radius: 3px;
+    }
+
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+        background-color: #6B7280;
     }
 </style>
 
