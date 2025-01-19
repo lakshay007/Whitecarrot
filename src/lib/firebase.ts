@@ -1,7 +1,7 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth, GoogleAuthProvider } from 'firebase/auth';
 
-// Your web app's Firebase configuration
+
 const firebaseConfig = {
     apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
     authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
@@ -11,14 +11,14 @@ const firebaseConfig = {
     appId: import.meta.env.VITE_FIREBASE_APP_ID
 };
 
-// Initialize Firebase
+// Initializing Firebase
 export const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 
-// Create and configure Google Provider
+
 export const googleProvider = new GoogleAuthProvider();
 
-// Add required scopes for Google Calendar
+
 googleProvider.addScope('https://www.googleapis.com/auth/calendar.readonly');
 googleProvider.addScope('openid');
 googleProvider.addScope('profile');

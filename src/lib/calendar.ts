@@ -9,7 +9,7 @@ export async function getCalendarEvents(startDate?: Date, endDate?: Date) {
             throw new Error('No access token available');
         }
 
-        // Calculate time range
+        // Calculating time range
         const timeMin = startDate ? startDate.toISOString() : new Date().toISOString();
         const timeMax = endDate ? endDate.toISOString() : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
 
